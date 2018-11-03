@@ -3,7 +3,7 @@ git clone https://github.com/contextwin/cmemword.git
 cmemwordはビルドの要件として、libcursesに依存します。
 私の環境(ubuntu)では、すでにビルドされたcursesの実行環境はあるが、デフォルトではコンパイル時に必要なのライブラリがありませんでした。
 aptコマンドで導入する場合,
-sudo apt install libncurses5-dev
+sudo apt install libncursesw5-dev
 を実行してください。
 
 元々、作者が英単語を暗記するために作成しました。
