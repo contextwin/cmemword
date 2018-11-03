@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ncurses.h>
 
 /*	define		*/
 #define PATH_MAX	4096
