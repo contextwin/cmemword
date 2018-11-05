@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ncurses.h>
+#include <locale.h>
 
 /*	define		*/
 #define PATH_MAX	4096
@@ -31,14 +32,12 @@ struct answer_and_question {
 };
 
 /*	function	*/
-void wait_user_input(const char *format, const void *variable_p) {
-	printf(":");
-	if(EOF == scanf(format, variable_p)) {
-		printf("ユーザーからの入力の受取に失敗しました。\n");
-		exit(ERROR);
-	}
-	getchar();				// 標準入力を空にする
-	printf("\n");
+void wait_user_input(WINDOW *win, const char *format, const void *variable_p) {
+
+	delch();
+	mvwprintw(win, 0, 0, ":");
+	wrefresh(win);
+	wscanw(win, format, variable_p);
 };
 
 unsigned int fp_read_and_split(FILE *fp, struct answer_and_question *answer_and_question_s) {
@@ -72,10 +71,19 @@ unsigned int fp_read_and_split(FILE *fp, struct answer_and_question *answer_and_
 	return question_max;
 }
 
+
 /*	Main method	*/
 int main(int argc,char** argv)
 {
 	/*	variable	*/
+	WINDOW *question_moniter_wnd,
+	       *background_wnd,
+	       *text_wnd,
+	       *border_text_wnd,
+	       *question_text_wnd,
+	       *user_input_box_wnd,
+	       *user_input_wnd;
+
 	DIR *files_dir;						// Files ディレクトリ
 	FILE *reading_fp;					// 出題ファイルを格納
 	struct dirent *files_dp;				// ディレクトリのデータを扱う構造体
@@ -144,36 +152,121 @@ int main(int argc,char** argv)
 
 		number_of_files = cnt;		// 出題ファイルの量を代入
 
-		printf("memword start menu.\n 数値を入力して下さい。\n");
-		printf("[  0] プログラム終了。\n");
-		printf("[  1] 暗記を始める。\n");
-		printf("[  2] 出題ファイルを編集する。\n");
-		wait_user_input("%hd", &user_input_num);
+		setlocale(LC_ALL, "");
+		initscr();
+		start_color();
+		echo();
+
+//		getmaxyx(stdscr, h, w);
+
+		/* generates color pair */
+		init_pair(1, COLOR_BLACK, COLOR_WHITE); 
+		init_pair(2, COLOR_BLUE, COLOR_WHITE); 
+		init_pair(3, COLOR_WHITE, COLOR_BLACK); 
+
+		/* generates new window */
+		background_wnd = newwin(20, 59, 0, 0);
+		border_text_wnd = newwin(1, 8 , 1, 1);
+		text_wnd = newwin(1, 49, 1, 9);
+		question_moniter_wnd = newwin(11, 55, 2, 2);
+		question_text_wnd = newwin(9, 53, 3, 3);
+		user_input_box_wnd = newwin(6, 55, 13, 2);
+		user_input_wnd = newwin(4, 53, 14, 3);
+
+		/* setting for background_wnd */
+		wbkgd(background_wnd, COLOR_PAIR(1));
+		box(background_wnd, ACS_VLINE, ACS_HLINE);
+
+		/* setting for border_text_wnd */
+		wbkgd(border_text_wnd, COLOR_PAIR(2));
+		wattron(border_text_wnd, A_BOLD);
+		wprintw(border_text_wnd, "CMEMWORD");
+
+		/* setting for text_wnd */
+		wbkgd(text_wnd, COLOR_PAIR(1));
+		wprintw(text_wnd, " - use ncurses implementation version of memword.");
+
+		/* setting for question_moniter_wnd */
+		wbkgd(question_moniter_wnd, COLOR_PAIR(1));
+		wprintw(question_moniter_wnd, "+------<moniter>--------------------------------------+");
+
+		for (cnt = 1 ; cnt <= 9; cnt++) {
+			wmove(question_moniter_wnd, cnt, 0);
+			wprintw(question_moniter_wnd, "|");
+			wmove(question_moniter_wnd, cnt, 54);
+			wprintw(question_moniter_wnd, "|");
+		}
+
+		mvwaddstr(question_moniter_wnd, 10, 0, "+-----------------------------------------------------+");
+
+		/* setting ror question_text_wnd */
+
+		/* setting for user_input_box_wnd */
+		wbkgd(user_input_box_wnd, COLOR_PAIR(3));
+		box(user_input_box_wnd, ACS_VLINE, ACS_HLINE);
+		wmove(user_input_box_wnd, 0, 6);
+		wprintw(user_input_box_wnd, "<user input box>");
+
+		/* setting for user_input_wnd */
+
+		/* print */
+		touchwin(background_wnd);
+		touchwin(border_text_wnd);
+		touchwin(text_wnd);
+		touchwin(question_moniter_wnd);
+		touchwin(question_text_wnd);
+		touchwin(user_input_box_wnd);
+		touchwin(user_input_wnd);
+		wrefresh(background_wnd);
+		wrefresh(border_text_wnd);
+		wrefresh(text_wnd);
+		wrefresh(question_moniter_wnd);
+		wrefresh(question_text_wnd);
+		wrefresh(user_input_box_wnd);
+		wrefresh(user_input_wnd);
+
+		mvwaddstr(question_text_wnd, 0, 0, "==== memword start menu ====");
+		mvwaddstr(question_text_wnd, 1, 0, "数値を入力して下さい。");
+                mvwaddstr(question_text_wnd, 2, 0, "[  0] プログラム終了。\n");
+                mvwaddstr(question_text_wnd, 3, 0, "[  1] 暗記を始める。\n");
+                mvwaddstr(question_text_wnd, 4, 0, "[  2] 出題ファイルを編集する。\n");
+		wrefresh(question_text_wnd);
+
+                wait_user_input(user_input_wnd, "%hd", &user_input_num);
 
 		if (1 == user_input_num) {
 			/*	出題ファイル選択ループ	*/
 			for (;;) {
+				wclear(question_text_wnd);
+
 				/*	Select		*/
-				printf("出題ファイルを数値で入力してください。(Please select a file and enter anumerical value)\n");
-				printf("[  0] メインメニューに戻る。\n");
+				mvwaddstr(question_text_wnd, 0, 0, "(Please select a file and enter anumerical value)");
+				mvwaddstr(question_text_wnd, 1, 0, "出題ファイルを数値で入力してください。");
+				mvwaddstr(question_text_wnd, 2, 0, "[  0] メインメニューに戻る。");
+
 				/*	出題ファイル番号と出題ファイル名を出力	*/
-				for (cnt = 0;cnt < number_of_files; cnt++) {
-					printf("[%3d] %s\n", filelist_s[cnt].file_number, filelist_s[cnt].file_name);
+				for (cnt = 0; cnt < number_of_files; cnt++) {
+					mvwprintw(question_text_wnd, (cnt + 3), 0, "[%3d] %s", filelist_s[cnt].file_number, filelist_s[cnt].file_name);
 				}
-				wait_user_input("%hd", &user_input_num);
+				wrefresh(question_text_wnd);
+
+				wait_user_input(user_input_wnd, "%hd", &user_input_num);
 
 				/*	入力エラーチェック	*/
 				if (user_input_num > number_of_files) {
-					printf("\n実際の問題の量以上の値か、負の値が入力されました。\n");
-					printf("A number greater than the actual number of file was entered.\n");
+					mvwaddstr(user_input_wnd, 0, 0, "実際の問題の量以上の値か、負の値が入力されました。");
+					mvwaddstr(user_input_wnd, 1, 0, "A number greater than the actual number of file was entered.");
 				} else {
 					break;
 				}
 			}
+				
+			endwin();
 
 			if (0 == user_input_num) continue;
 
 			if ((reading_fp = fopen(filelist_s[user_input_num - 1].file_name, "r")) == NULL) {
+				endwin();
 				printf("ファイルの読み込みに失敗しました。\n");
 				printf("file open error.\n");
 				exit(ERROR);
@@ -183,27 +276,34 @@ int main(int argc,char** argv)
 
 			for(;;) {
 				/*	Select		*/
-				printf("作業内容を数値で選択してください。\n");
-				printf("[  0] メインメニューに戻る。\n");
-				printf("[  1] 既存のファイルを編集する。\n");
-				printf("[  2] 新規ファイルを作成する。\n");
-				wait_user_input("%hd", &user_input_num);
+				wclear(question_text_wnd);
+				wprintw(question_text_wnd, "作業内容を数値で選択してください。");
+				mvwaddstr(question_text_wnd, 1, 0, "[  0] メインメニューに戻る。\n");
+				mvwaddstr(question_text_wnd, 2, 0, "[  1] 既存のファイルを編集する。\n");
+				mvwaddstr(question_text_wnd, 3, 0, "[  2] 新規ファイルを作成する。\n");
+				wrefresh(question_text_wnd);
+				wait_user_input(user_input_wnd, "%hd", &user_input_num);
 
 				if (1 == user_input_num) {
 
 					for (;;) {
 						/*	Select		*/
-						printf("編集するファイルを数値で入力してください。(Please select a file and enter anumerical value)\n");
+						wclear(question_text_wnd);
+						wprintw(question_text_wnd, "Please select a file and enter anumerical value.");
+						mvwaddstr(question_text_wnd, 1, 0, "編集するファイルを数値で入力してください。");
 						/*	出題ファイル番号と出題ファイル名を出力	*/
-						printf("[  0] メインメニューに戻る。\n");
+						mvwaddstr(question_text_wnd, 2, 0, "[  0] メインメニューに戻る。");
 						for (cnt = 0;cnt < number_of_files; cnt++) {
-							printf("[%3d] %s\n", filelist_s[cnt].file_number, filelist_s[cnt].file_name);
+							mvwprintw(question_text_wnd, cnt + 3, 0, "[%3d] %s\n", filelist_s[cnt].file_number, filelist_s[cnt].file_name);
 						}
-						wait_user_input("%hd", &user_input_num);
+						wrefresh(question_text_wnd);
+						wait_user_input(user_input_wnd, "%hd", &user_input_num);
 						/*	入力エラーチェック	*/
 						if (user_input_num > number_of_files) {
-							printf("\n実際の問題の量以上の値か、負の値が入力されました。\n");
-							printf("A number greater than the actual number of file was entered.\n");
+							wclear(user_input_wnd);
+							wprintw(user_input_wnd, "実際の問題の量以上の値か、負の値が入力されました。");
+							mvwaddstr(user_input_wnd, 1, 0, "A number greater than the actual number of file was entered.");
+							wrefresh(user_input_wnd);
 						} else {
 							break;
 						}
@@ -226,14 +326,18 @@ int main(int argc,char** argv)
 					} else if (0 == user_input_num) {
 						break;
 					} else {
-					printf("1か2以外が入力されました。\n");
+					wclear(user_input_wnd);
+					wprintw(user_input_wnd, "1か2以外が入力されました。\n");
+					wrefresh(user_input_wnd);
 				}
 			}
 		continue;
 		} else if (0 == user_input_num) {
+			endwin();
 			printf("bye.\n");
 			exit(SUCCESS);
 		} else {
+			endwin();
 			printf("1か2以外が入力されました。\n");
 			exit(ERROR);
 		}
@@ -242,14 +346,15 @@ int main(int argc,char** argv)
 
 		for (;;) {
 			/*	select		*/
-			printf("出題の順番を数値で入力して下さい。\n");
-			printf("[  0] メインメニューに戻る。\n");
-			printf("[  1] 一行目から順番に出題する。\n");
-			printf("[  2] ランダムに出題する。\n");
-			printf("[  3] 解答の文字数が少ない順に出題する。\n");
-			printf("[  4] 解答の文字数が多い順に出題する。\n");
-
-			wait_user_input("%hu", &user_input_num);
+			wclear(question_text_wnd);
+			mvwaddstr(question_text_wnd, 0, 0, "出題の順番を数値で入力して下さい");
+			mvwaddstr(question_text_wnd, 1, 0, "[  0] メインメニューに戻る。");
+			mvwaddstr(question_text_wnd, 2, 0, "[  1] 一行目から順番に出題する。");
+			mvwaddstr(question_text_wnd, 3, 0, "[  2] ランダムに出題する。");
+			mvwaddstr(question_text_wnd, 4, 0, "[  3] 解答の文字数が少ない順に出題する。");
+			mvwaddstr(question_text_wnd, 5, 0, "[  4] 解答の文字数が多い順に出題する。");
+			wrefresh(question_text_wnd);
+			wait_user_input(user_input_wnd, "%hu", &user_input_num);
 
 			if (1 == user_input_num) {
 				question_max = fp_read_and_split(reading_fp, answer_and_question_s);
@@ -349,12 +454,16 @@ int main(int argc,char** argv)
 				printf("表示されている番号以外が入力されました。\n");
 			}
 		}
+
 		if (0 == user_input_num) continue;
+
 		for (;;) {
 			/*	Select		*/
-			printf("出題数：%d\n", question_max);
-			printf("全問出題しますか?(y/n)\n");
-			wait_user_input("%c", &user_input_y_or_n);
+			wclear(question_text_wnd);
+			mvwprintw(question_text_wnd, 0, 0, "出題数：%d", question_max);
+			mvwaddstr(question_text_wnd, 1, 0, "全問出題しますか?\n(y/n)");
+			wrefresh(question_text_wnd);
+			wait_user_input(user_input_wnd, "%c", &user_input_y_or_n);
 
 			if ('y' == user_input_y_or_n) {
 				number_of_start_question = 0;
@@ -362,19 +471,29 @@ int main(int argc,char** argv)
 				break;
 			} else if ('n' == user_input_y_or_n) {
 
-				if (1 == user_input_num) {
+				if ((1 == user_input_num) || (3 == user_input_num) || (4 == user_input_num)) {
 
 					for(;;){
 						/*	Select		*/
-						printf("出題数：%d\n", question_max);
-						printf("何問目から出題しますか?\n数値を入力して下さい。");
-						wait_user_input("%hd", &user_input_num);
+						wclear(question_text_wnd);
+						wprintw(question_text_wnd, "出題数：%d", question_max);
+						mvwaddstr(question_text_wnd, 1, 0, "何問目から出題しますか?");
+						mvwaddstr(question_text_wnd, 2, 0 ,"数値を入力して下さい。");
+						wrefresh(question_text_wnd);
+						wait_user_input(user_input_wnd, "%hd", &user_input_num);
+						
 						/*	入力エラーチェック	*/
 						if (user_input_num > question_max) {
-							printf("\n実際の問題の量以上の値か、負の値が入力されました。\n");
-							printf("A number greater than the actual number of file was entered.\n");
+							wclear(user_input_wnd);
+							wprintw(user_input_wnd, "実際の問題の量以上の値か、負の値が入力されました。");
+							mvwaddstr(user_input_wnd, 1, 0, "A number greater than the actual number of file was entered.\n");
+							wrefresh(user_input_wnd);
+							wait_user_input(user_input_wnd, "%hd", &user_input_num);
 						} else if (0 == user_input_num) {
-							printf("\n0問目は存在しません。1以上の数値を入力して下さい。 \n");
+							wclear(user_input_wnd);
+							wprintw(user_input_wnd, "0問目は存在しません。1以上の数値を入力して下さい。");
+							wrefresh(user_input_wnd);
+							wait_user_input(user_input_wnd, "%hd", &user_input_num);
 						} else {
 							break;
 						}
@@ -384,19 +503,28 @@ int main(int argc,char** argv)
 
 					for (;;) {
 						/*	Select		*/
-						printf("\n出題開始行：%d\n", user_input_num);
-						printf("出題数：%d\n", question_max);
-						printf("何問目まで出題しますか?\n数値を入力して下さい");
-						wait_user_input("%hd", &number_of_end_question);
+						wclear(question_text_wnd);
+						wprintw(question_text_wnd, "出題開始行：%d", user_input_num);
+						mvwprintw(question_text_wnd, 1, 0, "出題数：%d", question_max);
+						mvwaddstr(question_text_wnd, 2, 0, "何問目まで出題しますか?");
+						mvwaddstr(question_text_wnd, 3, 0 ,"数値を入力して下さい。");
+						wrefresh(question_text_wnd);
+						wait_user_input(user_input_wnd, "%hd", &number_of_end_question);
+
 						/*	入力エラーチェック	*/
 						if (number_of_end_question > question_max) {
-							printf("\n実際の問題の量以上の値か、負の値が入力されました。\n");
-							printf("A number greater than the actual number of file was entered.\n");
+							wclear(user_input_wnd);
+							wprintw(user_input_wnd, "実際の問題の量以上の値か、負の値が入力されました。");
+							mvwaddstr(user_input_wnd, 1, 0, "A number greater than the actual number of file was entered.");
+							wrefresh(user_input_wnd);
+							wait_user_input(user_input_wnd, "%c", &user_input_num);
 						} else if (number_of_start_question > number_of_end_question) {
-							printf("\n出題開始行番号より小さい数値が入力されました。\n");
-							printf("A number smaller than thaline number at which the question is to be stated has been entered.\n");
+							wclear(user_input_wnd);
+							wprintw(user_input_wnd, "出題開始行番号より小さい数値が入力されました。");
+							mvwaddstr(user_input_wnd, 1, 0, "A number smaller than thaline number at which the question is to be stated has been entered.");
+							wrefresh(user_input_wnd);
+							wait_user_input(user_input_wnd, "%c", &user_input_num);
 						} else {
-							printf("\n");
 							break;
 						}
 					}
@@ -407,16 +535,23 @@ int main(int argc,char** argv)
 
 					for (;;) {
 						/*	Select		*/
-						printf("全出題数：%d\n", question_max);
-                                                printf("何問出題しますか?\n数値を入力して下さい\n");
-						wait_user_input("%hd", &number_of_end_question);
+						wclear(question_text_wnd);
+						wprintw(question_text_wnd, "全出題数：%d", question_max);
+                                                mvwaddstr(question_text_wnd, 1, 0, "何問出題しますか?");
+                                                mvwaddstr(question_text_wnd, 2, 0, "数値を入力して下さい\n");
+						wrefresh(question_text_wnd);
+						wait_user_input(user_input_wnd, "%hd", &number_of_end_question);
                                                 /*      入力エラーチェック      */
                                                 if (number_of_end_question > question_max) {
-                                                        printf("\n実際の問題の量以上の値か、負の値が入力されました。\n");
-                                                        printf("A number greater than the actual number of file was entered.\n");
+							wclear(user_input_wnd);
+                                                        wprintw(user_input_wnd, "実際の問題の量以上の値か、負の値が入力されました。");
+                                                        mvwaddstr(user_input_wnd, 1, 0, "A number greater than the actual number of file was entered.");
+							wrefresh(user_input_wnd);
                                                 } else if (number_of_start_question > number_of_end_question) {
-                                                        printf("\n出題開始行番号より小さい数値が入力されました。\n");
-                                                        printf("A number smaller than thaline number at which the question is to be stated has been entered.\n");
+							wclear(user_input_wnd);
+                                                        wprintw(user_input_wnd, "出題開始行番号より小さい数値が入力されました。");
+                                                        mvwaddstr(user_input_wnd, 1, 0, "A number smaller than thaline number at which the question is to be stated has been entered.");
+							wrefresh(user_input_wnd);
                                                 } else {
                                                         break;
                                                 }
@@ -424,22 +559,32 @@ int main(int argc,char** argv)
 				}
 				break;
 			} else {
-				printf("y(yes) か n(no) を入力して下さい。\n\n");
+				wclear(user_input_wnd);
+				wprintw(user_input_wnd, "y(yes) か n(no) を入力して下さい。");
+				wrefresh(user_input_wnd);
+				wait_user_input(user_input_wnd, "%c", user_input_answer);
+				
 			}
 		}
 		/*	出題	*/
 		for (cnt = number_of_start_question, cnt1 = 1; cnt < number_of_end_question; cnt++, cnt1++) {
 
-			printf("question\t: #%hhu\nline number\t: #%lu\n", cnt1, answer_and_question_s[cnt].number);
-			printf("Q: %s\n", answer_and_question_s[cnt].question);
-			wait_user_input("%[^\t\n]", user_input_answer);
+			wclear(question_text_wnd);
+			mvwprintw(question_text_wnd, 0, 0, "question : #%hhu\tline number : #%lu", cnt1, answer_and_question_s[cnt].number);
+			mvwprintw(question_text_wnd, 1, 0, "Q: %s\n", answer_and_question_s[cnt].question);
+			wrefresh(question_text_wnd);
+			wait_user_input(user_input_wnd, "%[^\t\n]", user_input_answer);
 
 			if (!strcmp(answer_and_question_s[cnt].answer, user_input_answer)) {
-				printf("correct!!\n");
-				printf("A: %s\n\n", answer_and_question_s[cnt].answer);
+				wclear(user_input_wnd);
+				mvwprintw(user_input_wnd, 2, 0, "correct!!");
+				mvwprintw(user_input_wnd, 3, 0, "A: %s", answer_and_question_s[cnt].answer);
+				wrefresh(user_input_wnd);
 			} else {
-				printf("miss!!\n");
-				printf("A: %s\n\n", answer_and_question_s[cnt].answer);
+				wclear(user_input_wnd);
+				mvwprintw(user_input_wnd, 2, 0, "miss!!");
+				mvwprintw(user_input_wnd, 3, 0, "A: %s\n\n", answer_and_question_s[cnt].answer);
+				wrefresh(user_input_wnd);
 				cnt1--;
 				cnt--;
 			}
@@ -447,8 +592,10 @@ int main(int argc,char** argv)
 
 		for (;;) {
 
-			printf("出題が終わりました。プログラムを終了しますか?(y/n)\n");
-			wait_user_input("%c", &user_input_y_or_n);
+			wclear(question_text_wnd);
+			wprintw(question_text_wnd, "出題が終わりました。プログラムを終了しますか?(y/n)\n");
+			wrefresh(question_text_wnd);
+			wait_user_input(user_input_wnd, "%c", &user_input_y_or_n);
 
 			if ('y' == user_input_y_or_n) {
 				break;
@@ -456,10 +603,14 @@ int main(int argc,char** argv)
 				question_max = 0;
 				break;
 			} else {
-				printf("y(yes) か n(no) を入力して下さい。\n\n");
+				wclear(question_text_wnd);
+				wprintw(question_text_wnd, "y(yes) か n(no) を入力して下さい。\n\n");
+				wrefresh(question_text_wnd);
 			}
 		}
 		if ('y' == user_input_y_or_n) break;
 	}
+
+	endwin();
 	exit(SUCCESS);
 };
