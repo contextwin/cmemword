@@ -398,7 +398,7 @@ int main(int argc,char** argv)
 				}
 				break;
 
-			/*	Ascending order		*/
+			/*	In order of decreasing number of characters	*/
 			} else if (3 == user_input_num) {
 				question_max = fp_read_and_split(reading_fp, answer_and_question_s);
 				for (cnt = 0; cnt < question_max; cnt++) {
@@ -422,7 +422,7 @@ int main(int argc,char** argv)
 					}
 				}
 				break;
-			/*	descending order	*/
+			/*	In descending order of the number of characters		*/
 			} else if (4 == user_input_num) {
 				question_max = fp_read_and_split(reading_fp, answer_and_question_s);
 
