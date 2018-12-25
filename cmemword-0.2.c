@@ -184,7 +184,7 @@ int main(int argc,char** argv)
 
 		/* setting for text_wnd */
 		wbkgd(text_wnd, COLOR_PAIR(1));
-		wprintw(text_wnd, " - use ncurses implementation version of memword.");
+		wprintw(text_wnd, " - implementation by ncurses. GUI of memword.");
 
 		/* setting for question_moniter_wnd */
 		wbkgd(question_moniter_wnd, COLOR_PAIR(1));
