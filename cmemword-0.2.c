@@ -35,6 +35,8 @@ struct answer_and_question {
 void wait_user_input(WINDOW *win, const char *format, const void *variable_p) {
 
 	delch();
+	mvwprintw(win, 0, 0, "                                                                           ");
+	wrefresh(win);
 	mvwprintw(win, 0, 0, ":");
 	wrefresh(win);
 	wscanw(win, format, variable_p);
@@ -207,9 +209,8 @@ int main(int argc,char** argv)
 		wmove(user_input_box_wnd, 0, 6);
 		wprintw(user_input_box_wnd, "<user input box>");
 
-		/* setting for user_input_wnd */
 
-		/* print */
+		/* print for about exterior  */
 		touchwin(background_wnd);
 		touchwin(border_text_wnd);
 		touchwin(text_wnd);
