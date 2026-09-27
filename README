@@ -1,11 +1,36 @@
 git clone https://github.com/contextwin/cmemword.git
 
 ビルド要件:
+1.
+cmemwordのビルドのためにC言語の処理系(コンパイラ)が必要です。
+
+もしも、どのコンパイラを用いればいいかわからなければ。
+build-essentialを導入することをおすすめします。
+
+aptコマンドでbuild-essentialを導入する場合,
+sudo apt install build-essential
+を実行して下さい。
+
+build-essentialを導入すると、主に以下のようなツールがまとめてインストールされます。
+gcc       GNU Cコンパイラ
+g++       GNU C++コンパイラ
+make      Makefileからビルドを実行するプログラム
+libc6-dev C言語用の標準ライブラリ開発ファイル
+dpkg-dev  Debianパッケージ開発用ツール
+
+clangというコンパイラもとても有名で良い手段だと思いますが、
+しかしbuild-essentialのmakeというツールは色々と出番があるでしょうから、このREADMEではbuild-essentialをおすすめします。
+
+2.
 cmemwordはビルドの要件として、libcursesに依存しますのでlibcursesのビルド環境がなければビルドすることができません。
 私の開発時の環境(ubuntu)では、すでにビルドされたcursesの実行環境はあるが、デフォルトではコンパイル時に必要なのライブラリがありませんでした。
+
 aptコマンドでlibcursesを導入する場合,
 sudo apt install libncursesw5-dev
 を実行してみてください。
+
+上記の準備ができた状態でSlavesディレクトリ内でmakeコマンドを実行してください。
+別にmakeを用いなくてもビルドできますが、この方法が現状では一番楽で一般的な方法だと個人的に思っています。
 
 元々、作者が英単語を暗記するために作成しました。
 バグ報告や、批評をお待ちしております。
