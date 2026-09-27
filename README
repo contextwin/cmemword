@@ -1,5 +1,10 @@
 git clone https://github.com/contextwin/cmemword.git
 
+概要:
+元々、作者が英単語を暗記するために作成しました。
+バグ報告や、批評をお待ちしております。
+https://twitter.com/UPkYZmtLJB4GUcA
+
 ビルド要件:
 1.
 cmemwordのビルドのためにC言語の処理系(コンパイラ)が必要です。
@@ -29,13 +34,10 @@ aptコマンドでlibcursesを導入する場合,
 sudo apt install libncursesw5-dev
 を実行してみてください。
 
-上記の準備ができた状態でSlavesディレクトリ内でmakeコマンドを実行してください。
+上記の準備ができた状態でcmemwordディレクトリ内でmakeコマンドを実行してください。
 別にmakeを用いなくてもビルドできますが、この方法が現状では一番楽で一般的な方法だと個人的に思っています。
 
-元々、作者が英単語を暗記するために作成しました。
-バグ報告や、批評をお待ちしております。
-https://twitter.com/UPkYZmtLJB4GUcA
-
+使い方:
 sampleの問題を用意してますがsampleの問題は、クライアントに日本語環境がインストールされていることを期待してます。
 が、アルファベットでアルファベットを説明する用途であれば日本語環境なしでも使用できます。
 
